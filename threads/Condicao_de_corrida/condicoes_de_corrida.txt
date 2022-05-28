@@ -1,0 +1,38 @@
+	Em alguns sistemas operacionais, processo que estão trabalhando juntos podem com-
+partilharde alguma memória comum que cada um pode ler e escrever. A memória compartilhada 
+pode encontrar-se na memória principal ou ser um arquivo compartilhado. Para ver como a 
+comunicação entre processos funciona na prática vamos considerar um exemplo simples, mas 
+comum: um spool de impressão. Quando um processo quer imprimir um arquivo, ele entra com 
+o nome do arquivo em um diretório de spool especial. Outro processo, daemon de impressão, 
+confere periodicamente para ver se há quaisquer arquivos a serem impressos, e se houve, ele
+os imprime e então remove seus nomes do diretório.
+	Imagine que nosso diretório de spool tem um número muito grande de vagas, numeradas 
+0, 1, 2, ..., cada uma capaz de conter um nome de arquivo. Também imagine que há duas varia-
+veis compartilhadas, out que apontam para o próximo arquivo a ser impresso, e in, que aponta
+para a próxima vaga livre no diretório. Essas duas variáveis podem muito bem ser mantidas
+em um arquivo de duas palavras disponível para todos os processo. Em determinado instante, 
+as vagas 0 a 3 estarão vazias(os arquivos já foram impressos) e as vagas 4 a 6 estarão cheias
+(com os nomes dos arquivos na fila para impressão). De maneira mais ou menos simultânea, os 
+processos A e B decidem que querem colocar um arquivo na fila para impressão. 
+	Nas jurisdições onde a Lei de Murphy for aplicável, pode ocorrer o seguinte: o proces-
+so A lê in e armazena o valor, 7, em uma variável local chamada next_free_slot. Logo em se-
+guida uma interrupção de relógio ocorre e a CPU decide que o processo A executou por tempo
+suficiente, então, ele troca para B. O processo B lê le in e recebe um 7. Ele, também, o 
+armazena em sua variável local next_free_slot. Nesse instante, ambos os processo acreditam 
+que a próxima vaga disponivel é 7. O processo B agora continua a executar. Ele armazena o 
+nome do seu aruqivo na vaga 7 e atualiza in para ser 8. Então ele segue em frente para fazer
+outrar coisas.
+	Por fim, o processo A executa novamente, começando do ponte onte parou. Ele olha para
+o next_free_slot, encontra um 7 e escreve seu nome de arquivo na vaga 7, apagando o que foi
+escrito pelo B. Assim o arquivo escrito por B jamais será impresso.
+
+	Situações como essas em que dois ou mais processo estão lendo ou escrevendo alguns 
+dados compartilhados e o resultado final depende de quem executa precisamente, são chamadas
+de condições de corrida.
+
+	Exclusão mútua com espera ocupada
+	Nesta seção examinaremos várias propostas para realizar a exclusão mútua, de maneira
+que enquanto um processo está ocupado atualizando a memória compartilhada em sua região 
+critica, nenhum outro entrara na sua região crítica para causar problemas. Soluções:
+
+	Para compilar os códigos use: gcc nome.c -o nomeExecutavel -lpthread
